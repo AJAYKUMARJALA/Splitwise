@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>The Split Ledger</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+--ink:#16261E;
+--green:#123524;
+--green-2:#1B4A34;
+--paper:#E9EDE7;
+--paper-2:#DDE3D9;
+--gold:#A6811E;
+--rust:#9C4A32;
+--teal:#1F6F5C;
+--line:#C6CDC1;
+}
+*{box-sizing:border-box;}
+body{
+margin:0;
+background:var(--paper);
+color:var(--ink);
+font-family:'Inter',sans-serif;
+padding-bottom:60px;
+}
+header{
+background:var(--green);
+color:var(--paper);
+padding:38px 24px 30px;
+text-align:center;
+border-bottom:4px double var(--gold);
+}
+header h1{
+font-family:'Fraunces',serif;
+font-weight:700;
+font-size:2.4rem;
+margin:0 0 6px;
+letter-spacing:0.5px;
+}
+header p{
+margin:0;
+font-size:0.85rem;
+letter-spacing:2px;
+text-transform:uppercase;
+color:var(--gold);
+}
+.wrap{
+max-width:1000px;
+margin:0 auto;
+padding:0 20px;
+}
+.grid{
+display:grid;
+grid-template-columns:320px 1fr;
+gap:24px;
+margin-top:28px;
+}
+@media (max-width:760px){ .grid{grid-template-columns:1fr;} }
+
+.card{
+background:#fff;
+border:1px solid var(--line);
+border-radius:2px;
+padding:22px;
+box-shadow:0 1px 0 var(--line);
+}
+.card h2{
+font-family:'Fraunces',serif;
+font-size:1.15rem;
+margin:0 0 14px;
+padding-bottom:10px;
+border-bottom:2px solid var(--ink);
+display:flex;
+align-items:center;
+justify-content:space-between;
+}
+.eyebrow{
+font-size:0.7rem;
+letter-spacing:1.5px;
+text-transform:uppercase;
+color:var(--teal);
+font-weight:600;
+}
+
+label{
+display:block;
+font-size:0.75rem;
+letter-spacing:0.5px;
+text-transform:uppercase;
+color:#5b6b60;
+margin:12px 0 4px;
+}
+input[type=text], input[type=number], input[type=date], select{
+width:100%;
+padding:9px 10px;
+border:1px solid var(--line);
+border-radius:2px;
+font-family:'Inter',sans-serif;
+font-size:0.92rem;
+background:#fbfbf9;
+}
+input:focus, select:focus{ outline:2px solid var(--teal); outline-offset:1px; }
+
+.participants{
+display:flex;
+flex-wrap:wrap;
+gap:8px;
+margin-top:6px;
+}
+.chip{
+border:1px solid var(--line);
+padding:5px 10px;
+border-radius:20px;
+font-size:0.82rem;
+cursor:pointer;
+user-select:none;
+background:#fbfbf9;
+}
+.chip.active{
+background:var(--green);
+border-color:var(--green);
+color:var(--paper);
+}
+
+button{
+font-family:'Inter',sans-serif;
+font-weight:600;
+font-size:0.85rem;
+letter-spacing:0.3px;
+border:none;
+border-radius:2px;
+padding:10px 16px;
+cursor:pointer;
+}
+.btn-primary{ background:var(--green); color:var(--paper); margin-top:16px; width:100%; }
+.btn-primary:hover{ background:var(--green-2); }
+.btn-ghost{ background:transparent; color:var(--rust); border:1px solid var(--rust); padding:4px 9px; font-size:0.72rem; }
+.btn-small{ background:var(--paper-2); color:var(--ink); padding:6px 10px; font-size:0.75rem; border:1px solid var(--line); }
+
+.person-row{
+display:flex;
+justify-content:space-between;
+align-items:center;
+padding:9px 0;
+border-bottom:1px dashed var(--line);
+font-family:'IBM Plex Mono',monospace;
+font-size:0.88rem;
+}
+.person-row:last-child{border-bottom:none;}
+.person-name{ font-family:'Inter',sans-serif; font-weight:500; }
+.amt-pos{ color:var(--teal); }
+.amt-neg{ color:var(--rust); }
+
+table{ width:100%; border-collapse:collapse; font-size:0.87rem; }
+thead th{
+text-align:left;
+font-size:0.68rem;
+letter-spacing:1px;
+text-transform:uppercase;
+color:#5b6b60;
+padding:6px 8px;
+border-bottom:2px solid var(--ink);
+}
+tbody td{
+padding:10px 8px;
+border-bottom:1px dashed var(--line);
+vertical-align:top;
+}
+tbody tr:hover{ background:#f5f6f2; }
+.amt-cell{ font-family:'IBM Plex Mono',monospace; text-align:right; white-space:nowrap; }
+.who{ font-size:0.78rem; color:#5b6b60; }
+
+.empty{
+text-align:center;
+color:#8a9186;
+font-size:0.88rem;
+padding:24px 0;
+font-style:italic;
+}
+
+.receipt{
+margin-top:24px;
+background:var(--green);
+color:var(--paper);
+border-radius:2px;
+padding:26px 26px 20px;
+position:relative;
+}
+.receipt::before, .receipt::after{
+content:"";
+position:absolute;
+left:0; right:0;
+height:10px;
+background:
+radial-gradient(circle at 8px 5px, var(--paper) 5px, transparent 6px) repeat-x;
+background-size:16px 10px;
+}
+.receipt::before{ top:-5px; }
+.receipt::after{ bottom:-5px; transform:rotate(180deg); }
+.receipt h2{
+font-family:'Fraunces',serif;
+font-size:1.2rem;
+margin:0 0 16px;
+border-bottom:1px solid rgba(233,237,231,0.35);
+padding-bottom:10px;
+}
+.settle-row{
+display:flex;
+justify-content:space-between;
+font-family:'IBM Plex Mono',monospace;
+font-size:0.92rem;
+padding:8px 0;
+border-bottom:1px dashed rgba(233,237,231,0.25);
+}
+.settle-row:last-child{ border-bottom:none; }
+.settle-arrow{ color:var(--gold); margin:0 8px; }
+
+.toolbar{
+display:flex;
+justify-content:flex-end;
+gap:10px;
+margin-top:18px;
+}
+#fileInput{ display:none; }
+</style>
+</head>
+<body>
+
+<header>
+<h1>The Split Ledger</h1>
+<p>Monthly expenses, tallied fairly</p>
+</header>
+
+<div class="wrap">
+<div class="grid">
+
+<!-- LEFT: People -->
+<div>
+<div class="card">
+<h2>People <span class="eyebrow" id="peopleCount">0</span></h2>
+<label for="personName">Add a person</label>
+<input type="text" id="personName" placeholder="e.g. Asha" onkeydown="if(event.key==='Enter')addPerson()">
+<button class="btn-primary" onclick="addPerson()">Add to ledger</button>
+
+<div id="peopleList" style="margin-top:18px;"></div>
+</div>
+</div>
+
+<!-- RIGHT: Expenses -->
+<div>
+<div class="card">
+<h2>New Entry</h2>
+<label for="expDesc">What was it for</label>
+<input type="text" id="expDesc" placeholder="e.g. Groceries, Electricity bill">
+
+<label for="expAmount">Amount</label>
+<input type="number" id="expAmount" placeholder="0.00" min="0" step="0.01">
+
+<label for="expDate">Date</label>
+<input type="date" id="expDate">
+
+<label for="expPaidBy">Paid by</label>
+<select id="expPaidBy"></select>
+
+<label>Split between</label>
+<div class="participants" id="participantChips"></div>
+
+<button class="btn-primary" onclick="addExpense()">Add to ledger</button>
+</div>
+
+<div class="card" style="margin-top:20px;">
+<h2>Entries <span class="eyebrow" id="expenseTotal">₹0.00</span></h2>
+<table>
+<thead>
+<tr><th>Date</th><th>Description</th><th>Paid by</th><th style="text-align:right;">Amount</th><th></th></tr>
+</thead>
+<tbody id="expenseRows"></tbody>
+</table>
+<div id="emptyExpenses" class="empty" style="display:none;">No entries yet — add your first expense above.</div>
+</div>
+</div>
+</div>
+
+<div class="receipt">
+<h2>Settle Up</h2>
+<div id="settleRows"></div>
+<div class="toolbar">
+<button class="btn-small" onclick="exportData()" style="background:transparent;color:var(--paper);border-color:rgba(233,237,231,0.4);">Export ledger (.json)</button>
+<button class="btn-small" onclick="document.getElementById('fileInput').click()" style="background:transparent;color:var(--paper);border-color:rgba(233,237,231,0.4);">Import ledger</button>
+<input type="file" id="fileInput" accept="application/json" onchange="importData(event)">
+</div>
+</div>
+</div>
+
+<script>
+let state = { people: [], expenses: [] };
+let selectedParticipants = new Set();
+
+function uid(){ return Math.random().toString(36).slice(2,9); }
+function fmt(n){ return '₹' + n.toLocaleString('en-IN', {minimumFractionDigits:2, maximumFractionDigits:2}); }
+
+function addPerson(){
+const input = document.getElementById('personName');
+const name = input.value.trim();
+if(!name) return;
+if(state.people.some(p => p.name.toLowerCase() === name.toLowerCase())){
+input.value=''; return;
+}
+state.people.push({ id: uid(), name });
+input.value='';
+render();
+}
+
+function removePerson(id){
+state.people = state.people.filter(p => p.id !== id);
+state.expenses = state.expenses.filter(e => e.paidBy !== id && !e.participants.includes(id));
+// if expense lost its payer or all participants, it was filtered above only on those exact matches;
+// also strip the removed person from any remaining expense's participant list
+state.expenses.forEach(e => e.participants = e.participants.filter(pid => pid !== id));
+render();
+}
+
+function toggleParticipant(id){
+if(selectedParticipants.has(id)) selectedParticipants.delete(id);
+else selectedParticipants.add(id);
+renderChips();
+}
+
+function addExpense(){
+const desc = document.getElementById('expDesc').value.trim();
+const amount = parseFloat(document.getElementById('expAmount').value);
+const date = document.getElementById('expDate').value || new Date().toISOString().slice(0,10);
+const paidBy = document.getElementById('expPaidBy').value;
+
+if(!desc || !amount || amount <= 0){ alert('Add a description and an amount greater than zero.'); return; }
+if(!paidBy){ alert('Add at least one person first.'); return; }
+const participants = selectedParticipants.size ? Array.from(selectedParticipants) : state.people.map(p=>p.id);
+
+state.expenses.push({ id: uid(), desc, amount, date, paidBy, participants });
+
+document.getElementById('expDesc').value='';
+document.getElementById('expAmount').value='';
+selectedParticipants = new Set();
+render();
+}
+
+function removeExpense(id){
+state.expenses = state.expenses.filter(e => e.id !== id);
+render();
+}
+
+function computeBalances(){
+const balance = {};
+state.people.forEach(p => balance[p.id] = 0);
+state.expenses.forEach(e => {
+const share = e.amount / e.participants.length;
+balance[e.paidBy] = (balance[e.paidBy] || 0) + e.amount;
+e.participants.forEach(pid => { balance[pid] = (balance[pid] || 0) - share; });
+});
+return balance;
+}
+
+function simplifyDebts(balance){
+const creditors = [], debtors = [];
+Object.entries(balance).forEach(([id, amt]) => {
+if(amt > 0.005) creditors.push({ id, amt });
+else if(amt < -0.005) debtors.push({ id, amt: -amt });
+});
+creditors.sort((a,b)=>b.amt-a.amt);
+debtors.sort((a,b)=>b.amt-a.amt);
+
+const transactions = [];
+let i=0, j=0;
+while(i < debtors.length && j < creditors.length){
+const pay = Math.min(debtors[i].amt, creditors[j].amt);
+transactions.push({ from: debtors[i].id, to: creditors[j].id, amount: pay });
+debtors[i].amt -= pay;
+creditors[j].amt -= pay;
+if(debtors[i].amt < 0.005) i++;
+if(creditors[j].amt < 0.005) j++;
+}
+return transactions;
+}
+
+function personName(id){
+const p = state.people.find(p => p.id === id);
+return p ? p.name : '—';
+}
+
+function render(){
+document.getElementById('peopleCount').textContent = state.people.length;
+
+// people list with net balance
+const balance = computeBalances();
+const peopleList = document.getElementById('peopleList');
+if(state.people.length === 0){
+peopleList.innerHTML = '<div class="empty">No one on the ledger yet.</div>';
+} else {
+peopleList.innerHTML = state.people.map(p => {
+const b = balance[p.id] || 0;
+const cls = b >= 0 ? 'amt-pos' : 'amt-neg';
+const label = b >= 0 ? 'is owed' : 'owes';
+return `<div class="person-row">
+<span class="person-name">${p.name}</span>
+<span style="display:flex;align-items:center;gap:10px;">
+<span class="${cls}">${label} ${fmt(Math.abs(b))}</span>
+<button class="btn-ghost" onclick="removePerson('${p.id}')">remove</button>
+</span>
+</div>`;
+}).join('');
+}
+
+// paid-by select
+const select = document.getElementById('expPaidBy');
+select.innerHTML = state.people.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+
+renderChips();
+
+// expense rows
+const rows = document.getElementById('expenseRows');
+const empty = document.getElementById('emptyExpenses');
+const sorted = [...state.expenses].sort((a,b)=> b.date.localeCompare(a.date));
+if(sorted.length === 0){
+rows.innerHTML=''; empty.style.display='block';
+} else {
+empty.style.display='none';
+rows.innerHTML = sorted.map(e => `
+<tr>
+<td>${e.date}</td>
+<td>${e.desc}<div class="who">split ${e.participants.length} way${e.participants.length>1?'s':''}: ${e.participants.map(personName).join(', ')}</div></td>
+<td>${personName(e.paidBy)}</td>
+<td class="amt-cell">${fmt(e.amount)}</td>
+<td><button class="btn-ghost" onclick="removeExpense('${e.id}')">del</button></td>
+</tr>`).join('');
+}
+const total = state.expenses.reduce((s,e)=>s+e.amount,0);
+document.getElementById('expenseTotal').textContent = fmt(total);
+
+// settle up
+const settleDiv = document.getElementById('settleRows');
+const transactions = simplifyDebts(balance);
+if(state.people.length === 0){
+settleDiv.innerHTML = '<div style="opacity:0.7;font-style:italic;">Add people and entries to see who owes whom.</div>';
+} else if(transactions.length === 0){
+settleDiv.innerHTML = '<div style="opacity:0.85;">Everyone is settled up. Nothing owed.</div>';
+} else {
+settleDiv.innerHTML = transactions.map(t => `
+<div class="settle-row">
+<span>${personName(t.from)}</span>
+<span><span class="settle-arrow">pays →</span>${personName(t.to)}</span>
+<span>${fmt(t.amount)}</span>
+</div>`).join('');
+}
+}
+
+function renderChips(){
+const chipDiv = document.getElementById('participantChips');
+if(state.people.length === 0){
+chipDiv.innerHTML = '<span style="font-size:0.8rem;color:#8a9186;">Add people first</span>';
+return;
+}
+chipDiv.innerHTML = state.people.map(p => {
+const active = selectedParticipants.size === 0 || selectedParticipants.has(p.id);
+return `<span class="chip ${selectedParticipants.has(p.id) || selectedParticipants.size===0 ? 'active':''}" onclick="toggleParticipant('${p.id}')">${p.name}</span>`;
+}).join('') + '<span style="font-size:0.72rem;color:#8a9186;align-self:center;">(none selected = split among everyone)</span>';
+}
+
+function exportData(){
+const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+const url = URL.createObjectURL(blob);
+const a = document.createElement('a');
+a.href = url;
+a.download = 'split-ledger-' + new Date().toISOString().slice(0,10) + '.json';
+a.click();
+URL.revokeObjectURL(url);
+}
+
+function importData(event){
+const file = event.target.files[0];
+if(!file) return;
+const reader = new FileReader();
+reader.onload = e => {
+try{
+const data = JSON.parse(e.target.result);
+if(!data.people || !data.expenses) throw new Error('bad format');
+state = data;
+render();
+} catch(err){
+alert('Could not read that file — make sure it\'s a ledger export from this app.');
+}
+};
+reader.readAsText(file);
+event.target.value = '';
+}
+
+// init
+document.getElementById('expDate').value = new Date().toISOString().slice(0,10);
+render();
+</script>
+</body>
+</html>

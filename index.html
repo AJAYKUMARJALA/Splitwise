@@ -305,14 +305,14 @@
     <div class="toolbar">
       <button class="btn-small" onclick="refreshData()" style="background:transparent;color:var(--paper);border-color:rgba(233,237,231,0.4);">Refresh</button>
       <button class="btn-small" onclick="exportData()" style="background:transparent;color:var(--paper);border-color:rgba(233,237,231,0.4);">Export backup (.json)</button>
-      <button class="btn-small" onclick="resetExpenses()" style="background:transparent;color:var(--rust);border-color:var(--rust);">Reset month</button>
+      <button class="btn-small" onclick="resetExpenses()" style="background:transparent;color:var(--rust);border-color:var(--rust);">Archive &amp; reset</button>
     </div>
   </div>
 </div>
 
 <script>
 // ── Paste your Apps Script Web App URL below (ends in /exec) ──
-const SHEET_API_URL = 'https://script.google.com/macros/s/AKfycbzvAuh0tQQTjoSDoESV1VQlygBQ2EBlh-4qS8tVDkLDv3eiBljOqlhVsiXut9UIYq6X1g/exec';
+const SHEET_API_URL = 'PASTE_YOUR_WEB_APP_URL_HERE';
 
 let state = { people: [], expenses: [] }; // people/expenses carry a `row` from the sheet
 let selectedParticipants = new Set(); // holds person NAMES (sheet uses names, not ids)
@@ -525,10 +525,13 @@ function exportData(){
 async function resetExpenses(){
   const total = state.expenses.length;
   if(total === 0){ alert('There are no entries to reset.'); return; }
-  const sure = confirm('This clears all ' + total + ' entries from the sheet (people stay). Export a backup first if you want a copy. Continue?');
+  const defaultLabel = new Date().toLocaleString('en-IN', { month: 'long', year: 'numeric' });
+  const monthLabel = prompt('Label this batch before archiving it (e.g. "July 2026"):', defaultLabel);
+  if(monthLabel === null) return; // cancelled
+  const sure = confirm('This archives all ' + total + ' entries as "' + monthLabel + '" and clears the active sheet. Continue?');
   if(!sure) return;
-  setStatus('Resetting…');
-  await postToSheet({ action:'resetExpenses' });
+  setStatus('Archiving and resetting…');
+  await postToSheet({ action:'resetExpenses', monthLabel });
   await refreshData();
 }
 

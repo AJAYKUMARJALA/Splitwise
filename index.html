@@ -238,6 +238,26 @@
   }
   .sync-note.ok{ color:var(--teal); }
   .sync-note.err{ background:#fbeceb; color:var(--rust); border:1px solid var(--rust); padding:10px; }
+
+  .archive-month{
+    border-bottom:1px dashed var(--line);
+  }
+  .archive-month:last-child{ border-bottom:none; }
+  .archive-head{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:12px 4px;
+    cursor:pointer;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:0.88rem;
+  }
+  .archive-head .label{ font-family:'Inter',sans-serif; font-weight:600; }
+  .archive-caret{ color:var(--gold); transition:transform 0.15s; display:inline-block; margin-right:8px; }
+  .archive-caret.open{ transform:rotate(90deg); }
+  .archive-body{ display:none; padding:0 4px 14px; }
+  .archive-body.open{ display:block; }
+  .archive-body table{ width:100%; }
 </style>
 </head>
 <body>
@@ -308,13 +328,19 @@
       <button class="btn-small" onclick="resetExpenses()" style="background:transparent;color:var(--rust);border-color:var(--rust);">Archive &amp; reset</button>
     </div>
   </div>
+
+  <div class="card" style="margin-top:20px;">
+    <h2>Past Months <span class="eyebrow" id="archiveCount">0</span></h2>
+    <div id="archiveList"></div>
+    <div id="emptyArchive" class="empty" style="display:none;">No archived months yet — use "Archive &amp; reset" to start one.</div>
+  </div>
 </div>
 
 <script>
 // ── Paste your Apps Script Web App URL below (ends in /exec) ──
-const SHEET_API_URL = 'https://script.google.com/macros/s/AKfycbzvAuh0tQQTjoSDoESV1VQlygBQ2EBlh-4qS8tVDkLDv3eiBljOqlhVsiXut9UIYq6X1g/exec';
+const SHEET_API_URL = 'PASTE_YOUR_WEB_APP_URL_HERE';
 
-let state = { people: [], expenses: [] }; // people/expenses carry a `row` from the sheet
+let state = { people: [], expenses: [], archive: [] }; // people/expenses carry a `row` from the sheet
 let selectedParticipants = new Set(); // holds person NAMES (sheet uses names, not ids)
 let busy = false;
 
@@ -499,6 +525,52 @@ function render(){
         <span>${fmt(t.amount)}</span>
       </div>`).join('');
   }
+
+  renderArchive();
+}
+
+function renderArchive(){
+  const list = document.getElementById('archiveList');
+  const empty = document.getElementById('emptyArchive');
+  const archive = state.archive || [];
+  document.getElementById('archiveCount').textContent = archive.length ? new Set(archive.map(a=>a.month)).size + ' month(s)' : '0';
+
+  if(archive.length === 0){
+    list.innerHTML = ''; empty.style.display = 'block'; return;
+  }
+  empty.style.display = 'none';
+
+  const byMonth = {};
+  archive.forEach(a => { (byMonth[a.month] = byMonth[a.month] || []).push(a); });
+
+  list.innerHTML = Object.entries(byMonth).map(([month, entries], idx) => {
+    const total = entries.reduce((s,e)=>s+e.amount,0);
+    const rows = entries.map(e => `
+      <tr>
+        <td>${e.date}</td>
+        <td>${e.description}<div class="who">split ${e.participants.length} way${e.participants.length>1?'s':''}: ${e.participants.join(', ')}</div></td>
+        <td>${e.paidBy}</td>
+        <td class="amt-cell">${fmt(e.amount)}</td>
+      </tr>`).join('');
+    return `
+      <div class="archive-month">
+        <div class="archive-head" onclick="toggleArchiveMonth(${idx})">
+          <span><span class="archive-caret" id="caret-${idx}">▸</span><span class="label">${month}</span></span>
+          <span>${fmt(total)}</span>
+        </div>
+        <div class="archive-body" id="body-${idx}">
+          <table>
+            <thead><tr><th>Date</th><th>Description</th><th>Paid by</th><th style="text-align:right;">Amount</th></tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function toggleArchiveMonth(idx){
+  document.getElementById('caret-'+idx).classList.toggle('open');
+  document.getElementById('body-'+idx).classList.toggle('open');
 }
 
 function renderChips(){
